@@ -1,0 +1,36 @@
+@require ../../nexssflow
+@db sqlite as app {
+  path: ":memory:"
+  migration_mode: "auto"
+}
+@schema NoteRecord {
+  ID int64 `json:"id" db:"id"`
+  Title string `json:"title" db:"title" validate:"required"`
+  Active bool `json:"active" db:"active" default:"true"`
+}
+@dbmap app NoteRecord as notes
+@migration app 1 create_notes {
+  up: "CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1)"
+  down: "DROP TABLE notes"
+}
+@pipeline add_note
+  db.insert @{ database: "app", schema: "NoteRecord", record: . }
+@end
+@pipeline read_notes
+  db.find @{ database: "app", schema: "NoteRecord", order_by: [{ field: "title", direction: "asc" }], limit: 25 }
+@end
+@pipeline migration_check
+  db.migration_status @{ database: "app" }
+@end
+@pipeline scenario
+  pipeline.migration_check as migration
+  -> { title: "first" }
+  -> pipeline.add_note
+  -> pipeline.read_notes as read
+  -> { migration, read }
+@end
+pipeline.scenario
+@assert: result.migration.migrations[0].status == "applied"
+@assert: result.read.count == 1
+@assert: result.read.rows[0].title == "first"
+@assert: result.read.rows[0].active == true

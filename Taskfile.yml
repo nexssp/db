@@ -1,0 +1,24 @@
+version: '3'
+
+vars:
+  NFLOW: 'go run github.com/nexssp/flow/cmd/nflow'
+
+tasks:
+  default:   { cmds: [task --list --sort none], silent: true }
+  build:     { desc: "Build Go packages [./...]", cmds: ['go build {{.CLI_ARGS | default "./..."}}'] }
+  tidy:      { desc: "Tidy go.mod and go.sum", cmds: [go mod tidy] }
+  tidy:check: { desc: "Check that go.mod and go.sum are tidy", cmds: [go mod tidy -diff] }
+  fmt:       { desc: "Format Go source", cmds: [golangci-lint fmt] }
+  fmt:check: { desc: "Check Go source formatting", cmds: [golangci-lint fmt --diff] }
+  test:      { desc: "Run Go tests [./...]", cmds: ['go test -count=1 {{.CLI_ARGS | default "./..."}}'] }
+  test:race: { desc: "Run Go tests with the race detector [./...]", cmds: ['go test -race -count=1 {{.CLI_ARGS | default "./..."}}'] }
+  vet:       { desc: "Run go vet [./...]", cmds: ['go vet {{.CLI_ARGS | default "./..."}}'] }
+  lint:      { desc: "Run golangci-lint [./...]", cmds: ['golangci-lint run {{.CLI_ARGS | default "./..."}}'] }
+  lint:nflow: { desc: "Statically lint the NFlow specifications", cmds: ['{{.NFLOW}} lint ./spec'] }
+  test:nflow: { desc: "Execute the NFlow acceptance specifications", cmds: ['{{.NFLOW}} test ./spec'] }
+
+  # ── Workflows (Gates) ────────────────────────────────────────────
+  ci:go:     { desc: "Go formatting, module, build, lint, vet and race-test gate", deps: [tidy:check, fmt:check, build, vet, lint, test:race], output: prefixed }
+  ci:nflow: { desc: "NFlow static lint and acceptance-test gate", deps: [lint:nflow, test:nflow], output: prefixed }
+  pre-push: { desc: "Run the complete Go and NFlow verification gates", deps: [ci:go, ci:nflow], output: prefixed }
+  ci:       { desc: "Run the complete Go and NFlow verification gates", deps: [ci:go, ci:nflow], output: prefixed }

@@ -1,0 +1,14 @@
+@require ./nexssflow
+@db sqlite as local { path: ":memory:" }
+
+@pipeline quickstart
+  db.exec @{ database: "local", query: "CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT NOT NULL)", args: [] }
+  -> db.exec @{ database: "local", query: "INSERT INTO notes (title) VALUES (?)", args: ["First"] }
+  -> db.exec @{ database: "local", query: "UPDATE notes SET title = ? WHERE id = 1", args: ["First"] }
+  -> db.query @{ database: "local", query: "SELECT id, title FROM notes", args: [] }
+  -> runtime.pick @{ field: "rows" }
+@end
+
+@assert: len(result) == 1
+@assert: result[0].title == "First"
+pipeline.quickstart

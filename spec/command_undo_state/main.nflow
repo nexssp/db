@@ -1,0 +1,50 @@
+@require ../../nexssflow
+@db sqlite as local { path: ":memory:" }
+
+@schema SSHCommandUndoResponse {
+  CanUndo bool `json:"canUndo"`
+}
+
+@schema SSHCommandUndoStatus {
+  CanUndo bool `json:"canUndo" db:"can_undo"`
+}
+
+@dbmap local SSHCommandUndoStatus as ssh_command_undo
+
+@pipeline commands_bulk_get
+  :response-schema=SSHCommandUndoResponse
+  db.query_mapped @{ database: "local", schema: "SSHCommandUndoStatus", query: "SELECT EXISTS(SELECT 1 FROM ssh_command_undo WHERE id = 1) AS can_undo", args: [], error_message: "Could not check SSH command undo state" }
+  -> { canUndo: .rows[0].canUndo }
+@end
+
+@pipeline query_failure
+  :response-schema=SSHCommandUndoResponse
+  db.query_mapped @{ database: "local", schema: "SSHCommandUndoStatus", query: "SELECT EXISTS(SELECT 1 FROM missing_ssh_command_undo WHERE id = 1) AS can_undo", args: [], error_message: "Could not check SSH command undo state" }
+  -> { canUndo: .rows[0].canUndo }
+@end
+
+@pipeline capture_failure
+  pipeline.query_failure
+  ? on_error {
+    xerr.KindInternal
+      -> { kind: .error.kind, message: .error.message },
+    else
+      -> error.reraise,
+  }
+@end
+
+@pipeline scenario
+  db.exec @{ database: "local", query: "CREATE TABLE ssh_command_undo (id INTEGER PRIMARY KEY, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)", args: [] }
+  -> pipeline.commands_bulk_get as empty
+  -> db.exec @{ database: "local", query: "INSERT INTO ssh_command_undo (id, snapshot_json, created_at) VALUES (1, '[]', '2026-01-01T00:00:00Z')", args: [] }
+  -> pipeline.commands_bulk_get as available
+  -> pipeline.capture_failure as failure
+  -> { empty, available, failure }
+@end
+
+pipeline.scenario
+
+@assert: result.empty.canUndo == false
+@assert: result.available.canUndo == true
+@assert: result.failure.kind == "Internal"
+@assert: result.failure.message == "Could not check SSH command undo state"

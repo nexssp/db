@@ -1,0 +1,47 @@
+# Go binaries, tests and coverage/profiling output
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.txt
+coverage.html
+coverage_bench.json
+profile.pprof
+cpu.pprof
+mem.pprof
+
+# Local databases and environment files
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+*.local
+
+# Local Go workspace files
+/go.work
+/go.work.sum
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# Nexss and Task local state
+.nexss/
+.nexss.srcpack.state
+.task
