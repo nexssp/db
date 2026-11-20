@@ -14,30 +14,30 @@
 @dbmap local SSHCommand as ssh_commands
 
 @pipeline setup
-  db.exec @{ database: "local", query: "CREATE TABLE ssh_commands (id TEXT PRIMARY KEY, name TEXT NOT NULL, command TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', category TEXT NOT NULL DEFAULT '', use_count INTEGER NOT NULL DEFAULT 0, built_in INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)", args: [] }
-  -> db.exec @{ database: "local", query: "INSERT INTO ssh_commands (id, name, command, description, category, use_count, built_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", args: ["builtin-zeta", "zeta BuiltIn", "echo zeta", "", "", 2, 1, "2024-01-01T00:00:00Z"] }
-  -> db.exec @{ database: "local", query: "INSERT INTO ssh_commands (id, name, command, description, category, use_count, built_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", args: ["builtin-alpha", "Alpha BuiltIn", "echo alpha", "", "", 2, 1, "2024-01-01T00:00:00Z"] }
-  -> db.exec @{ database: "local", query: "INSERT INTO ssh_commands (id, name, command, description, category, use_count, built_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", args: ["custom-alpha", "alpha Custom", "echo custom", "", "", 2, 0, "2024-01-01T00:00:00Z"] }
-  -> db.exec @{ database: "local", query: "INSERT INTO ssh_commands (id, name, command, description, category, use_count, built_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", args: ["custom-low", "Beta Custom", "echo low", "", "", 1, 0, "2024-01-01T00:00:00Z"] }
+  db.exec(database: "local", query: "CREATE TABLE ssh_commands (id TEXT PRIMARY KEY, name TEXT NOT NULL, command TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', category TEXT NOT NULL DEFAULT '', use_count INTEGER NOT NULL DEFAULT 0, built_in INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL)", args: [])
+  -> db.exec(database: "local", query: "INSERT INTO ssh_commands (id, name, command, description, category, use_count, built_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", args: ["builtin-zeta", "zeta BuiltIn", "echo zeta", "", "", 2, 1, "2024-01-01T00:00:00Z"])
+  -> db.exec(database: "local", query: "INSERT INTO ssh_commands (id, name, command, description, category, use_count, built_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", args: ["builtin-alpha", "Alpha BuiltIn", "echo alpha", "", "", 2, 1, "2024-01-01T00:00:00Z"])
+  -> db.exec(database: "local", query: "INSERT INTO ssh_commands (id, name, command, description, category, use_count, built_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", args: ["custom-alpha", "alpha Custom", "echo custom", "", "", 2, 0, "2024-01-01T00:00:00Z"])
+  -> db.exec(database: "local", query: "INSERT INTO ssh_commands (id, name, command, description, category, use_count, built_in, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", args: ["custom-low", "Beta Custom", "echo low", "", "", 1, 0, "2024-01-01T00:00:00Z"])
 @end
 
 @pipeline read_commands
-  db.query_mapped @{ database: "local", schema: "SSHCommand", query: "SELECT id, name, command, description, category, use_count, built_in, created_at FROM ssh_commands ORDER BY use_count DESC, built_in DESC, LOWER(name)", args: [], error_message: "Could not load SSH commands" }
-  -> runtime.pick @{ field: "rows" }
+  db.query_mapped(database: "local", schema: "SSHCommand", query: "SELECT id, name, command, description, category, use_count, built_in, created_at FROM ssh_commands ORDER BY use_count DESC, built_in DESC, LOWER(name)", args: [], error_message: "Could not load SSH commands")
+  -> runtime.pick(field: "rows")
 @end
 
 @pipeline read_failure
-  db.query_mapped @{ database: "local", schema: "SSHCommand", query: "SELECT id, name, command, description, category, use_count, built_in, created_at FROM missing_ssh_commands ORDER BY use_count DESC, built_in DESC, LOWER(name)", args: [], error_message: "Could not load SSH commands" }
-  -> runtime.pick @{ field: "rows" }
+  db.query_mapped(database: "local", schema: "SSHCommand", query: "SELECT id, name, command, description, category, use_count, built_in, created_at FROM missing_ssh_commands ORDER BY use_count DESC, built_in DESC, LOWER(name)", args: [], error_message: "Could not load SSH commands")
+  -> runtime.pick(field: "rows")
 @end
 
 @pipeline capture_failure
   pipeline.read_failure
   ? on_error {
     xerr.KindInternal
-      -> runtime.const @{ value: { kind: .error.kind, message: .error.message } },
+    -> { kind: .error.kind, message: .error.message },
     else
-      -> error.reraise,
+    -> error.reraise,
   }
 @end
 

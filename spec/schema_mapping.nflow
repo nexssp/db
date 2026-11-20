@@ -9,15 +9,15 @@
 @dbmap local NoteWrite as notes
 
 @pipeline setup
-  db.exec @{ database: "local", query: "CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT NOT NULL, is_done INTEGER NOT NULL DEFAULT 1, priority INTEGER NOT NULL DEFAULT 9)", args: [] }
+  db.exec(database: "local", query: "CREATE TABLE notes (id INTEGER PRIMARY KEY, title TEXT NOT NULL, is_done INTEGER NOT NULL DEFAULT 1, priority INTEGER NOT NULL DEFAULT 9)", args: [])
 @end
 @pipeline insert_note
   :request-schema=NoteWrite
-  db.insert @{ database: "local", schema: "NoteWrite", record: . }
+  db.insert(database: "local", schema: "NoteWrite", record: .)
 @end
 @pipeline read_note
-  db.query_mapped @{ database: "local", schema: "NoteWrite", query: "SELECT title, is_done, priority FROM notes", args: [] }
-  -> runtime.pick @{ field: "rows" }
+  db.query_mapped(database: "local", schema: "NoteWrite", query: "SELECT title, is_done, priority FROM notes", args: [])
+  -> runtime.pick(field: "rows")
 @end
 pipeline.setup
   -> { title: "First" }

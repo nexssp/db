@@ -14,13 +14,13 @@
   down: "DROP TABLE notes"
 }
 @pipeline add_note
-  db.insert @{ database: "app", schema: "NoteRecord", record: . }
+  db.insert(database: "app", schema: "NoteRecord", record: .)
 @end
 @pipeline read_notes
-  db.find @{ database: "app", schema: "NoteRecord", order_by: [{ field: "title", direction: "asc" }], limit: 25 }
+  db.find(database: "app", schema: "NoteRecord", order_by: [{ field: "title", direction: "asc" }], limit: 25)
 @end
 @pipeline migration_check
-  db.migration_status @{ database: "app" }
+  db.migration_status(database: "app")
 @end
 @pipeline scenario
   pipeline.migration_check as migration

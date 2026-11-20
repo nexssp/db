@@ -96,11 +96,11 @@ The schema parser preserves field tags, so persistence is opt-in through `db:"co
 
 @pipeline create_note
   :request-schema=NoteWrite
-  db.insert @{ database: "app", schema: "NoteWrite", record: . }
+  db.insert(database: "app", schema: "NoteWrite", record: .)
 @end
 
 @pipeline list_notes
-  db.find @{ database: "app", schema: "NoteWrite", filters: { completed: false }, order_by: [{ field: "priority", direction: "desc" }], limit: 100 }
+  db.find(database: "app", schema: "NoteWrite", filters: { completed: false }, order_by: [{ field: "priority", direction: "desc" }], limit: 100)
 @end
 ```
 

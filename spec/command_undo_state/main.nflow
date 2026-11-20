@@ -13,13 +13,13 @@
 
 @pipeline commands_bulk_get
   :response-schema=SSHCommandUndoResponse
-  db.query_mapped @{ database: "local", schema: "SSHCommandUndoStatus", query: "SELECT EXISTS(SELECT 1 FROM ssh_command_undo WHERE id = 1) AS can_undo", args: [], error_message: "Could not check SSH command undo state" }
+  db.query_mapped(database: "local", schema: "SSHCommandUndoStatus", query: "SELECT EXISTS(SELECT 1 FROM ssh_command_undo WHERE id = 1) AS can_undo", args: [], error_message: "Could not check SSH command undo state")
   -> { canUndo: .rows[0].canUndo }
 @end
 
 @pipeline query_failure
   :response-schema=SSHCommandUndoResponse
-  db.query_mapped @{ database: "local", schema: "SSHCommandUndoStatus", query: "SELECT EXISTS(SELECT 1 FROM missing_ssh_command_undo WHERE id = 1) AS can_undo", args: [], error_message: "Could not check SSH command undo state" }
+  db.query_mapped(database: "local", schema: "SSHCommandUndoStatus", query: "SELECT EXISTS(SELECT 1 FROM missing_ssh_command_undo WHERE id = 1) AS can_undo", args: [], error_message: "Could not check SSH command undo state")
   -> { canUndo: .rows[0].canUndo }
 @end
 
@@ -27,16 +27,16 @@
   pipeline.query_failure
   ? on_error {
     xerr.KindInternal
-      -> { kind: .error.kind, message: .error.message },
+    -> { kind: .error.kind, message: .error.message },
     else
-      -> error.reraise,
+    -> error.reraise,
   }
 @end
 
 @pipeline scenario
-  db.exec @{ database: "local", query: "CREATE TABLE ssh_command_undo (id INTEGER PRIMARY KEY, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)", args: [] }
+  db.exec(database: "local", query: "CREATE TABLE ssh_command_undo (id INTEGER PRIMARY KEY, snapshot_json TEXT NOT NULL, created_at TEXT NOT NULL)", args: [])
   -> pipeline.commands_bulk_get as empty
-  -> db.exec @{ database: "local", query: "INSERT INTO ssh_command_undo (id, snapshot_json, created_at) VALUES (1, '[]', '2026-01-01T00:00:00Z')", args: [] }
+  -> db.exec(database: "local", query: "INSERT INTO ssh_command_undo (id, snapshot_json, created_at) VALUES (1, '[]', '2026-01-01T00:00:00Z')", args: [])
   -> pipeline.commands_bulk_get as available
   -> pipeline.capture_failure as failure
   -> { empty, available, failure }
